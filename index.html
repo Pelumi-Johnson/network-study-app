@@ -322,6 +322,10 @@
       return String(term).replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim();
     }
 
+    function imageURL(fileName){
+      return encodeURIComponent(fileName);
+    }
+
     function imageNamesForCard(card){
       if(Array.isArray(card.images) && card.images.length > 0) return card.images;
       if(typeof card.images === "string" && card.images.trim() !== "") return [card.images];
@@ -353,7 +357,7 @@
       return `
         <div class="image-viewer" id="${viewerId}" onclick="event.stopPropagation()">
           <button class="image-arrow left" onclick="changeViewerImage(event,'${viewerId}',-1)">‹</button>
-          <img class="study-img" src="${escapeHTML(candidates[0])}" alt="${escapeHTML(cardData.term)}" onerror="this.style.visibility='hidden'">
+          <img class="study-img" src="${imageURL(candidates[0])}" alt="${escapeHTML(cardData.term)}" onerror="this.style.visibility='hidden'">
           <button class="image-arrow right" onclick="changeViewerImage(event,'${viewerId}',1)">›</button>
         </div>
       `;
@@ -364,7 +368,7 @@
         const img = new Image();
         img.onload = () => resolve(src);
         img.onerror = () => resolve(null);
-        img.src = src;
+        img.src = imageURL(src);
       });
     }
 
@@ -389,7 +393,7 @@
       const img = viewer.querySelector("img");
       if(img){
         img.style.visibility = "visible";
-        img.src = data.images[0];
+        img.src = imageURL(data.images[0]);
       }
 
       if(data.images.length > 1) viewer.classList.add("has-multiple");
@@ -411,7 +415,7 @@
       const img = viewer.querySelector("img");
       if(img){
         img.style.visibility = "visible";
-        img.src = data.images[data.index];
+        img.src = imageURL(data.images[data.index]);
       }
     }
 
