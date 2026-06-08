@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Network Engineering Study App</title>
+
+  <style>
+    :root {
+      --bg:#f4f7fb;--header:linear-gradient(135deg,#1d4ed8,#2563eb);--card:#fff;--card-soft:#f8fafc;--text:#0f172a;--muted:#475569;--subtle:#64748b;--border:#dbe3ef;--accent:#2563eb;--accent-hover:#1d4ed8;--accent-soft:#dbeafe;--panel:#eef2ff;--shadow:rgba(15,23,42,.12);--shadow-soft:rgba(15,23,42,.08);--nav-btn:#111827;--success-bg:#dcfce7;--success-border:#16a34a;--error-bg:#fee2e2;--error-border:#dc2626;
+    }
+
+    body.dark-mode {
+      --bg:#111827;--header:linear-gradient(135deg,#1e293b,#3730a3);--card:#182236;--card-soft:#22304a;--text:#f8fafc;--muted:#cbd5e1;--subtle:#aebbd0;--border:#334155;--accent:#6d7596;--accent-hover:#818aac;--accent-soft:#2b344d;--panel:#151f33;--shadow:rgba(0,0,0,.35);--shadow-soft:rgba(0,0,0,.25);--nav-btn:#2f3b55;
+    }
+
+    *{box-sizing:border-box;font-family:Arial,sans-serif}
+    html,body{min-height:100%;margin:0;background:var(--bg);color:var(--text)}
+    body{min-height:100vh;transition:background .25s ease,color .25s ease}
+
+    header{background:var(--header);color:white;padding:24px 20px;text-align:center;position:relative;box-shadow:0 8px 24px var(--shadow-soft)}
+    header h1{margin:0;font-size:32px;letter-spacing:-.5px}
+    header p{margin:8px 0 0;opacity:.95}
+    .theme-toggle{position:absolute;top:18px;right:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:white;backdrop-filter:blur(6px)}
+    .theme-toggle:hover{background:rgba(255,255,255,.24);transform:translateY(-1px)}
+
+    .screen{display:none;max-width:1180px;margin:28px auto;padding:20px}
+    .active{display:block}
+
+    .hero{min-height:72vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px}
+    .hero-box,.topic-card,.mode-card,.flashcard,.review-card,.quiz-box,.match-box{background:var(--card);color:var(--text);border:1px solid var(--border);box-shadow:0 12px 35px var(--shadow)}
+    .hero-box{padding:46px;border-radius:28px;max-width:780px}
+    .hero-box h2{font-size:44px;margin:0 0 12px;letter-spacing:-1px}
+    .hero-box p,.topic-card p,.mode-card p,.review-card p{color:var(--muted);line-height:1.5}
+    .mini-stats{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:24px 0}
+    .mini-stat{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:12px 16px;font-weight:800}
+
+    button{border:none;background:var(--accent);color:white;padding:13px 19px;border-radius:12px;cursor:pointer;font-size:15px;font-weight:bold;margin:5px;transition:.2s}
+    button:hover{background:var(--accent-hover);transform:translateY(-1px)}
+    .nav-btn{background:var(--nav-btn)}
+    .nav-btn:hover{background:#020617}
+    body.dark-mode .nav-btn:hover{background:#465574}
+
+    .top-bar{display:flex;justify-content:flex-start;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    .top-bar .title-area{flex:1}
+    .topic-title-right{margin-left:auto;text-align:right}
+    .study-top-bar{justify-content:flex-start;align-items:center}
+    .study-title-box{flex:1}
+    .page-title{margin:0;font-size:30px;letter-spacing:-.4px}
+    .subtle,.hint,.counter{color:var(--subtle)}
+    .top-counter{font-weight:900;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:10px 14px;white-space:nowrap;margin-left:auto}
+
+    .bottom-faded-learn-label{text-align:center;margin-top:150px;margin-bottom:130px;opacity:.09;color:var(--text);pointer-events:none}
+    .bottom-faded-learn-label h2{margin:0;font-size:56px;font-weight:900;letter-spacing:-1px}
+    .bottom-faded-learn-label p{margin:8px 0 0;font-size:22px;font-weight:800}
+
+    .topic-grid,.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:25px}
+    .topic-card,.mode-card{border-radius:22px;padding:25px;cursor:pointer;transition:.2s;text-align:center;min-height:190px;position:relative;overflow:hidden}
+    .topic-card:hover,.mode-card:hover{transform:translateY(-5px);background:var(--card-soft)}
+    .mode-card h3,.topic-card h3{font-size:24px;margin:14px 0 8px}
+    .locked{opacity:.5;cursor:not-allowed}
+    .locked:hover{transform:none;background:var(--card)}
+    .badge{display:inline-block;background:var(--accent-soft);color:var(--accent);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:bold}
+    body.dark-mode .badge{color:#dbeafe}
+
+    .flashcard-wrap{display:flex;justify-content:center;margin:20px 0;perspective:1200px}
+    .flashcard{width:100%;max-width:820px;min-height:560px;border-radius:26px;cursor:pointer;position:relative;transform-style:preserve-3d;transition:transform .6s ease}
+    .flashcard.flipped{transform:rotateY(180deg)}
+    .side{position:absolute;inset:0;padding:32px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:26px;background:var(--card)}
+    .front{transform:rotateY(0deg)}
+    .back{transform:rotateY(180deg)}
+    .text-only-front{gap:16px}
+
+    .image-viewer{width:100%;max-width:540px;height:300px;margin-bottom:22px;position:relative;display:flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:10px;z-index:4;transition:transform .25s ease,box-shadow .25s ease,background .25s ease,border .25s ease}
+    .image-viewer:hover{transform:scale(1.55);z-index:9999;background:var(--card);box-shadow:0 25px 70px rgba(0,0,0,.45);border:2px solid var(--accent)}
+    .study-img{width:100%;height:100%;object-fit:contain;cursor:zoom-in;border-radius:14px}
+    .image-arrow{position:absolute;top:50%;transform:translateY(-50%);border:none;border-radius:0;margin:0;padding:4px 8px;opacity:0;display:none;background:transparent;color:rgba(255,255,255,.72);font-size:54px;line-height:1;font-weight:400;z-index:10000;box-shadow:none;text-shadow:0 3px 12px rgba(0,0,0,.55)}
+    body:not(.dark-mode) .image-arrow{color:rgba(15,23,42,.62);text-shadow:0 3px 12px rgba(255,255,255,.65)}
+    .image-viewer.has-multiple .image-arrow{display:flex}
+    .image-viewer.has-multiple:hover .image-arrow{opacity:.75}
+    .image-arrow:hover{background:transparent;color:var(--accent);transform:translateY(-50%) scale(1.08)}
+    .image-arrow.left{left:8px}
+    .image-arrow.right{right:8px}
+
+    .visual-card{width:100%;max-width:540px;height:300px;background:var(--panel);border-radius:20px;padding:24px;margin-bottom:22px;border:1px solid var(--border);display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;text-align:center;color:var(--text);line-height:1.4}
+    .visual-label{background:var(--accent);color:white;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:900;letter-spacing:.8px}
+    body.dark-mode .visual-label{background:#3b4563}
+    .visual-card strong{font-size:28px;color:var(--text)}
+
+    .term{font-size:40px;font-weight:900;margin-bottom:14px;letter-spacing:-.8px}
+    .definition{font-size:23px;line-height:1.5;max-width:720px}
+    .example{margin-top:18px;font-size:18px;color:var(--muted);line-height:1.5}
+    .example strong,.label{color:var(--accent);font-weight:bold}
+    body.dark-mode .example strong,body.dark-mode .label{color:#cbd5e1}
+    .hint{margin-top:18px;font-size:14px}
+    .controls{text-align:center;margin:18px 0 35px}
+
+    .review-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+    .review-card{border-radius:20px;padding:20px;position:relative;overflow:visible}
+    .review-card .image-viewer{height:190px;max-width:none;margin-bottom:12px}
+    .review-card .image-viewer:hover{transform:scale(1.45)}
+    .review-card .visual-card{width:100%;height:190px;max-width:none;margin-bottom:12px}
+    .review-card.no-image{padding:24px;border-left:5px solid var(--accent)}
+    .review-card h3{font-size:24px;margin:0 0 8px}
+
+    .quiz-box,.match-box{border-radius:24px;padding:28px}
+    .quiz-question{font-size:26px;font-weight:900;margin-bottom:20px}
+    .answers{display:grid;grid-template-columns:1fr;gap:12px}
+    .answer-btn{width:100%;text-align:left;background:var(--card-soft);color:var(--text);border:2px solid var(--border)}
+    .answer-btn:hover{background:var(--accent-soft)}
+    .correct{background:var(--success-bg)!important;border-color:var(--success-border)!important;color:#064e3b!important}
+    .wrong{background:var(--error-bg)!important;border-color:var(--error-border)!important;color:#7f1d1d!important}
+    .score{margin-top:18px;font-weight:bold;color:var(--muted)}
+
+    .match-instruction{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:14px;margin-bottom:18px;font-weight:bold}
+    .selected-display{background:var(--nav-btn);color:white;border-radius:14px;padding:14px;margin-bottom:18px;font-weight:bold;text-align:center}
+    .quizlet-match-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+    .quizlet-card{background:var(--card);color:var(--text);border:2px solid var(--border);border-radius:16px;min-height:180px;padding:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;text-align:center;font-size:20px;line-height:1.35;transition:.2s ease;user-select:none;box-shadow:0 8px 22px var(--shadow-soft)}
+    .quizlet-card:hover{transform:scale(1.03);background:var(--card-soft);border-color:var(--accent)}
+    .quizlet-card.selected{border-color:var(--accent);background:var(--accent-soft)}
+    .quizlet-card.correct-pop{animation:fadeBlank .35s forwards;pointer-events:none}
+    .quizlet-card.blank-space{visibility:hidden;pointer-events:none}
+    .quizlet-card.wrong-shake{animation:wrongShake .25s;border-color:var(--error-border);background:var(--error-bg);color:#7f1d1d}
+
+    @keyframes fadeBlank{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1);visibility:hidden}}
+    @keyframes wrongShake{0%{transform:translateX(0)}25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-6px)}100%{transform:translateX(0)}}
+
+    @media(max-width:900px){
+      header{padding-top:72px}
+      .theme-toggle{top:14px;right:14px}
+      .topic-grid,.mode-grid,.review-grid{grid-template-columns:1fr}
+      .quizlet-match-grid{grid-template-columns:repeat(2,1fr)}
+      .quizlet-card{min-height:140px;font-size:17px}
+      .term{font-size:32px}
+      .definition{font-size:19px}
+      .flashcard{min-height:540px}
+      .hero-box h2{font-size:32px}
+      .top-counter{font-size:13px;padding:9px 12px}
+      .bottom-faded-learn-label{margin-top:90px;margin-bottom:90px}
+      .bottom-faded-learn-label h2{font-size:40px}
+      .bottom-faded-learn-label p{font-size:17px}
+      .image-viewer:hover,.review-card .image-viewer:hover{transform:scale(1.2)}
+      .image-viewer.has-multiple .image-arrow{opacity:.7;font-size:42px}
+      .topic-title-right{text-align:left;margin-left:0}
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <button class="theme-toggle" onclick="toggleTheme()" id="themeButton">Dark</button>
+    <h1>Network Engineering Study App</h1>
+    <p id="headerSubtitle">Build confidence one concept at a time</p>
+  </header>
+
+  <section id="startScreen" class="screen active">
+    <div class="hero">
+      <div class="hero-box">
+        <h2>Master Network Engineering</h2>
+        <p>Study the physical tools, real cable hardware, and core network concepts you need to recognize and explain confidently.</p>
+        <div class="mini-stats">
+          <div class="mini-stat">6 Active Topics</div>
+          <div class="mini-stat">100+ Study Cards</div>
+          <div class="mini-stat">4 Study Modes</div>
+        </div>
+        <button onclick="showScreen('topicScreen')">Start Studying</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="topicScreen" class="screen">
+    <div class="top-bar">
+      <button class="nav-btn" onclick="showScreen('startScreen')">← Back</button>
+      <div class="title-area topic-title-right">
+        <h2 class="page-title">Study Topics</h2>
+        <p class="subtle">Choose a topic to begin.</p>
+      </div>
+    </div>
+    <div class="topic-grid" id="topicGrid"></div>
+  </section>
+
+  <section id="modeScreen" class="screen">
+    <div class="top-bar">
+      <button class="nav-btn" onclick="showScreen('topicScreen')">← Back</button>
+    </div>
+
+    <div class="mode-grid">
+      <div class="mode-card" onclick="startFlashcards()">
+        <h3>Flash Cards</h3>
+        <p>Flip through terms, definitions, examples, and pictures when the topic uses images.</p>
+      </div>
+
+      <div class="mode-card" onclick="startQuiz()">
+        <h3>Practice</h3>
+        <p>Answer multiple-choice questions and test recall.</p>
+      </div>
+
+      <div class="mode-card" onclick="startMatch()">
+        <h3>Match</h3>
+        <p>Pair terms with definitions. Correct pairs leave blank spaces.</p>
+      </div>
+
+      <div class="mode-card" onclick="startReview()">
+        <h3>Review</h3>
+        <p>Scan every card in the topic before testing yourself.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="flashcardScreen" class="screen">
+    <div class="top-bar study-top-bar">
+      <button class="nav-btn" onclick="showScreen('modeScreen')">← Back</button>
+      <span class="counter top-counter" id="flashCounter"></span>
+    </div>
+
+    <div class="flashcard-wrap">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="side front" id="flashFront">
+          <div id="flashImageBox"></div>
+          <div class="term" id="flashTerm"></div>
+          <div class="hint">Click card to reveal the answer</div>
+        </div>
+
+        <div class="side back">
+          <div class="term" id="backTerm"></div>
+          <div class="definition" id="backDefinition"></div>
+          <div class="example" id="backExample"></div>
+          <div class="hint">Click card to hide the answer</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="previousCard()">Previous</button>
+      <button onclick="nextCard()">Next</button>
+      <button class="nav-btn" onclick="shuffleCards()">Shuffle</button>
+    </div>
+
+    <div class="bottom-faded-learn-label">
+      <h2>Flash Cards</h2>
+      <p id="flashTopicName">Cables, Connectors, and Fiber</p>
+    </div>
+  </section>
+
+  <section id="quizScreen" class="screen">
+    <div class="top-bar study-top-bar">
+      <button class="nav-btn" onclick="showScreen('modeScreen')">← Back</button>
+      <div class="study-title-box">
+        <h2 class="page-title">Practice</h2>
+        <p class="subtle" id="quizTopicName"></p>
+      </div>
+    </div>
+
+    <div class="quiz-box">
+      <div class="quiz-question" id="quizQuestion"></div>
+      <div class="answers" id="quizAnswers"></div>
+      <div class="score" id="quizScore"></div>
+      <button onclick="nextQuizQuestion()">Next Question</button>
+    </div>
+  </section>
+
+  <section id="matchScreen" class="screen">
+    <div class="top-bar study-top-bar">
+      <button class="nav-btn" onclick="showScreen('modeScreen')">← Back</button>
+      <div class="study-title-box">
+        <h2 class="page-title">Match</h2>
+        <p class="subtle" id="matchTopicName"></p>
+      </div>
+    </div>
+
+    <div class="match-box">
+      <div class="match-instruction">Select a term, then select the matching definition.</div>
+      <div class="selected-display" id="selectedDisplay">Selected: none</div>
+      <div class="quizlet-match-grid" id="quizletMatchGrid"></div>
+      <div class="score" id="matchScore"></div>
+      <button onclick="startMatch()">New Round</button>
+    </div>
+  </section>
+
+  <section id="reviewScreen" class="screen">
+    <div class="top-bar study-top-bar">
+      <button class="nav-btn" onclick="showScreen('modeScreen')">← Back</button>
+      <div class="study-title-box">
+        <h2 class="page-title">Review</h2>
+        <p class="subtle" id="reviewTopicName"></p>
+      </div>
+    </div>
+    <div class="review-grid" id="reviewGrid"></div>
+  </section>
+
+  <script>
+    const viewerData = {};
+    let viewerCounter = 0;
+
+    function toggleTheme(){
+      document.body.classList.toggle("dark-mode");
+      const isDark=document.body.classList.contains("dark-mode");
+      document.getElementById("themeButton").textContent=isDark?"Light":"Dark";
+      localStorage.setItem("networkStudyTheme",isDark?"dark":"light");
+    }
+
+    function loadTheme(){
+      const savedTheme=localStorage.getItem("networkStudyTheme");
+      if(savedTheme==="dark"){
+        document.body.classList.add("dark-mode");
+        document.getElementById("themeButton").textContent="Light";
+      }else{
+        document.getElementById("themeButton").textContent="Dark";
+      }
+    }
+
+    function escapeHTML(text){
+      return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function cleanFileBase(term){
+      return String(term).replace(/[\\/:*?"<>|]/g,"").replace(/\s+/g," ").trim();
+    }
+
+    function imageNamesForCard(card){
+      if(Array.isArray(card.images) && card.images.length > 0) return card.images;
+      if(typeof card.images === "string" && card.images.trim() !== "") return [card.images];
+
+      const base = cleanFileBase(card.term);
+      return [`${base}.jpg`,`${base} 2.jpg`,`${base} 3.jpg`,`${base} 4.jpg`,`${base} 5.jpg`];
+    }
+
+    function makeVisual(title,type,fileName){
+      const labels={tool:"Network Tool",test:"Cable Test",fault:"Troubleshooting",signal:"Network Signal",fiber:"Fiber",poe:"Power",infra:"Infrastructure",security:"Security",wireless:"Wireless",recovery:"Recovery",service:"Network Service",concept:"Image Needed"};
+
+      return `
+        <div class="visual-card">
+          <span class="visual-label">${labels[type]||"Image Needed"}</span>
+          <strong>${escapeHTML(title)}</strong>
+          <span class="subtle">File name: ${escapeHTML(fileName)}</span>
+          <span class="subtle">Optional extras: ${escapeHTML(cleanFileBase(title))} 2.jpg, ${escapeHTML(cleanFileBase(title))} 3.jpg</span>
+        </div>
+      `;
+    }
+
+    function imageViewer(cardData){
+      const viewerId = "viewer_" + (++viewerCounter);
+      const candidates = imageNamesForCard(cardData);
+
+      viewerData[viewerId] = {term:cardData.term,type:cardData.visualType,candidates:candidates,images:[],index:0};
+      setTimeout(() => detectAvailableImages(viewerId), 0);
+
+      return `
+        <div class="image-viewer" id="${viewerId}" onclick="event.stopPropagation()">
+          <button class="image-arrow left" onclick="changeViewerImage(event,'${viewerId}',-1)">‹</button>
+          <img class="study-img" src="${escapeHTML(candidates[0])}" alt="${escapeHTML(cardData.term)}" onerror="this.style.visibility='hidden'">
+          <button class="image-arrow right" onclick="changeViewerImage(event,'${viewerId}',1)">›</button>
+        </div>
+      `;
+    }
+
+    function testImage(src){
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(src);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    async function detectAvailableImages(viewerId){
+      const data = viewerData[viewerId];
+      const viewer = document.getElementById(viewerId);
+      if(!data || !viewer) return;
+
+      const results = await Promise.all(data.candidates.map(src => testImage(src)));
+      const available = results.filter(Boolean);
+
+      if(!document.getElementById(viewerId)) return;
+
+      if(available.length === 0){
+        viewer.outerHTML = makeVisual(data.term, data.type, data.candidates[0]);
+        return;
+      }
+
+      data.images = available;
+      data.index = 0;
+
+      const img = viewer.querySelector("img");
+      if(img){
+        img.style.visibility = "visible";
+        img.src = data.images[0];
+      }
+
+      if(data.images.length > 1) viewer.classList.add("has-multiple");
+      else viewer.classList.remove("has-multiple");
+    }
+
+    function changeViewerImage(event, viewerId, direction){
+      event.stopPropagation();
+      const data = viewerData[viewerId];
+      if(!data || data.images.length <= 1) return;
+      data.index = (data.index + direction + data.images.length) % data.images.length;
+      updateViewerImage(viewerId);
+    }
+
+    function updateViewerImage(viewerId){
+      const data = viewerData[viewerId];
+      const viewer = document.getElementById(viewerId);
+      if(!data || !viewer) return;
+      const img = viewer.querySelector("img");
+      if(img){
+        img.style.visibility = "visible";
+        img.src = data.images[data.index];
+      }
+    }
+
+    function card(term,definition,example,visualType="concept",images=""){
+      return{term,definition,example,visualType,images};
+    }
+
+    const topics=[
+      {
+        id:"cables",
+        title:"Cables, Connectors, and Fiber",
+        description:"Physical cables, connectors, fiber types, transceivers, and network media you should recognize by sight.",
+        available:true,
+        hasImages:true,
+        cards:[
+          card("RJ-45","Registered Jack 45. The common connector used at the end of Ethernet cables to plug into network ports.","The plug you insert into a switch, router, PC, or wall network port.","concept"),
+          card("RJ-11","Registered Jack 11. A smaller connector mostly used for telephone lines, not Ethernet networking.","Old home phone cables usually use RJ-11, not Ethernet."),
+          card("Ethernet Cable","A cable that carries network data between wired devices in a LAN.","A PC connects to a wall jack or switch using an Ethernet cable."),
+          card("Cat5e","Category 5 enhanced Ethernet cable. It commonly supports up to 1 Gbps for normal network connections.","Many offices use Cat5e for regular desktop connections."),
+          card("Cat6","Category 6 Ethernet cable. It supports better speed and less interference than Cat5e.","Cat6 is good for newer office networks and faster connections."),
+          card("Cat6a","Category 6 augmented Ethernet cable. It supports 10 Gbps better over longer cable runs than regular Cat6.","A company may use Cat6a for high-speed network runs."),
+          card("Straight-Through Cable","An Ethernet cable wired so different device types can connect correctly.","PC to switch, or switch to router."),
+          card("Crossover Cable","An Ethernet cable wired to connect similar devices directly, mostly used with older equipment.","Switch to switch or PC to PC without Auto-MDIX."),
+          card("Console Cable","A cable used to connect a computer directly to a router or switch console port for setup and troubleshooting.","A technician uses it to configure a Cisco switch for the first time."),
+          card("Patch Cable","A short Ethernet cable used to connect nearby network devices or ports.","A patch cable connects a patch panel port to a switch port."),
+          card("Plenum Cable","Fire-resistant network cable used in air-handling spaces. CMP means Communications Multipurpose Plenum.","Look for CMP or PLENUM printed on the cable jacket."),
+          card("LC Connector","Lucent Connector. A small fiber connector commonly used for modern fiber links.","A switch may use LC fiber connectors for high-speed uplinks."),
+          card("SC Connector","Subscriber Connector. A square fiber connector used in some fiber networks and patch panels.","You may see SC connectors in older fiber patch panels."),
+          card("ST Connector","Straight Tip connector. An older round fiber connector with a twist-lock style.","Some older buildings or legacy fiber networks may still use ST connectors."),
+          card("SFP Module","Small Form-factor Pluggable module. A hot-swappable transceiver that plugs into a switch and converts electrical signals to optical signals, or optical signals back to electrical signals.","An SFP module lets a switch connect to a fiber optic cable between two network closets."),
+          card("SFP+ Module","Enhanced Small Form-factor Pluggable module. A faster hot-swappable transceiver like SFP, usually used for 10 Gbps fiber or copper uplinks.","A data center switch may use SFP+ for 10-gigabit uplinks."),
+          card("Fiber Optic Cable","A cable that sends network data as light instead of electrical signals. It can carry huge amounts of data over very long distances, between buildings, cities, countries, and even through undersea cables across oceans.","Fiber is often used between buildings, floors, network closets, data centers, and countries.","fiber"),
+          card("Single-Mode Fiber","Fiber cable designed for long-distance links using one main path of light.","A company may use single-mode fiber to connect two buildings far apart.","fiber"),
+          card("Multi-Mode Fiber","Fiber cable designed for shorter-distance links using multiple paths of light.","A data center may use multi-mode fiber between racks or rooms.","fiber"),
+          card("Transceiver","A device that both transmits and receives signals, often converting between switch signals and fiber or copper media.","An SFP transceiver lets a switch connect to fiber.")
+        ]
+      },
+      {
+        id:"testing",
+        title:"Cable Testing and Troubleshooting",
+        description:"Physical testers, diagnostic tools, cable faults, signal loss, and troubleshooting terms.",
+        available:true,
+        hasImages:true,
+        cards:[
+          card("Cable Tester","A tool used to check if a network cable is wired correctly and working.","You test an Ethernet cable to see if all 8 wires are good.","test"),
+          card("Toner and Probe","A toolset used to trace and identify where a cable goes.","You use it to find which cable in the network closet connects to a wall jack.","tool"),
+          card("Tone Generator","The part of a toner kit that sends a signal through a cable so it can be traced.","You connect it to a wall port so the cable can be traced.","tool"),
+          card("Probe","The handheld tool that detects the tone signal from a cable.","You move it near cables until you hear the tone sound.","tool"),
+          card("Loopback Plug","A plug used to test whether a network port can send and receive signals back to itself.","A technician uses it to test a switch port or computer network card.","tool"),
+          card("Multimeter","A tool that measures electrical values like voltage, resistance, and continuity.","You use it to check if a wire has an unbroken path.","tool"),
+          card("TDR","Time Domain Reflectometer. A tester that finds copper cable faults and estimates how far away the fault is.","It can show that a cable break is 40 feet away.","test"),
+          card("OTDR","Optical Time Domain Reflectometer. A tester used to find breaks, loss, or problems in fiber optic cables.","It helps find breaks or signal loss in a fiber cable.","test"),
+          card("Cable Certifier","An advanced tester that proves a cable meets required speed and performance standards.","A company uses it after installing new network cabling.","test"),
+          card("Continuity Test","A test that checks whether a wire path is complete from one end to the other.","It tells you if a wire is cut or disconnected.","test"),
+          card("Wire Map Test","A test that checks whether each wire is connected to the correct pin on both ends.","It can show if pin 1 and pin 2 were accidentally swapped.","test"),
+          card("Short Circuit","A fault where wires touch each other when they should be separate.","A bad cable termination can cause two wires inside the cable to touch.","fault"),
+          card("Open Circuit","A fault where the cable path is broken and the signal cannot complete the path.","A wire inside the Ethernet cable may be cut.","fault"),
+          card("Split Pair","A wiring mistake where wires are on the right pins but paired incorrectly, causing poor performance.","The cable may pass basic continuity but still perform badly.","fault"),
+          card("Cable Fault","Any physical or wiring problem that stops a cable from working correctly.","A damaged cable, bad connector, or broken wire can cause a cable fault.","fault"),
+          card("Signal Loss","When a network signal becomes weaker before reaching the other end.","A very long or damaged cable may lose too much signal.","signal"),
+          card("Attenuation","The weakening of a signal as it travels through copper or fiber cable.","Fiber or copper cable can fail if attenuation is too high.","signal"),
+          card("Near-End Crosstalk","Interference measured near the transmitting end of a cable.","Poorly twisted wires can cause signals to bleed into each other.","signal"),
+          card("Far-End Crosstalk","Interference measured at the far end of a cable from where the signal was sent.","A cable tester may detect crosstalk near the other end of the run.","signal"),
+          card("Cable Length Test","A test that checks how long a cable run is.","A tester may show that an Ethernet cable is 230 feet long.","test"),
+          card("PoE Test","Power over Ethernet test. A test that checks whether a port or cable can provide power and data together.","You test if a switch port can power an IP phone or camera.","poe")
+        ]
+      },
+      {
+        id:"tools",
+        title:"Cabling Tools and Infrastructure",
+        description:"Hands-on cabling tools, rack hardware, wall jacks, panels, trays, raceways, and cable organization.",
+        available:true,
+        hasImages:true,
+        cards:[
+          card("Crimper","A tool used to attach RJ-45 connectors to Ethernet cables.","You use it when making your own Ethernet cable.","tool"),
+          card("Punch-Down Tool","A tool used to press network wires into a patch panel or keystone jack.","A technician uses it when wiring a wall network port.","tool"),
+          card("Wire Stripper","A tool used to remove the outer jacket from a cable without damaging the inner wires.","You strip the cable before arranging the small twisted wires.","tool"),
+          card("Cable Cutter","A tool used to cut network cable cleanly.","You use it before terminating a cable with an RJ-45 connector.","tool"),
+          card("Fish Tape","A tool used to pull cable through walls, ceilings, or conduits.","You use fish tape to run Ethernet from one room to another.","tool"),
+          card("Cable Tie Velcro Tie","A tie used to organize and secure cables neatly without making a cable mess.","Velcro ties keep switch cables clean in a rack.","tool"),
+          card("Label Maker","A tool used to label cables, ports, racks, and patch panels.","A label may say Room 204 Port A.","tool"),
+          card("Patch Panel","A panel where building network cables terminate before being patched into switches.","Wall jack cables usually end at the patch panel in the network closet.","infra"),
+          card("Keystone Jack","The network jack inside a wall plate where an Ethernet cable plugs in.","You plug your laptop into a keystone jack on the wall.","infra"),
+          card("Wall Plate","The faceplate on the wall that holds network jacks.","The Ethernet port in a classroom or office is usually inside a wall plate.","infra"),
+          card("Network Drop","A cable run from the network closet to a wall jack or device location.","A desk may have one network drop for a computer and another for an IP phone.","infra"),
+          card("Rack","A frame used to mount and organize network equipment.","Switches, routers, patch panels, and servers are mounted in a rack.","infra"),
+          card("Cable Management Panel","A rack panel used to guide and organize patch cables neatly.","It keeps patch cables from hanging loosely across the switch.","infra"),
+          card("Cable Tray","A pathway that supports and routes many cables above ceilings or in network rooms.","Many Ethernet cables may sit in a cable tray above the rack.","infra"),
+          card("Conduit","A pipe or tube that protects and routes cables.","Cable may run through conduit inside walls or underground.","infra"),
+          card("Patch Cable","A short cable used to connect nearby network equipment.","A patch cable connects a patch panel port to a switch port."),
+          card("Faceplate","Another name for the wall plate that holds network ports.","A faceplate may have two Ethernet jacks labeled A and B.","infra"),
+          card("Blanking Panel","A panel used to cover empty rack spaces for neatness and airflow control.","It helps keep a rack neat and improves airflow.","infra"),
+          card("Rack Unit","A standard measurement for rack equipment height. One rack unit is written as 1U.","A 1U switch takes up one rack unit.","infra"),
+          card("Cable Raceway","A plastic or metal channel used to hide and protect cables along walls.","Offices may use raceway when cables cannot be placed inside the wall.","infra")
+        ]
+      },
+      {
+        id:"switchports",
+        title:"Switch Ports, Duplex, Speed, and PoE",
+        description:"Concept-focused switch port behavior, speed, duplex, PoE, MAC learning, and port states.",
+        available:true,
+        hasImages:false,
+        cards:[
+          card("Half Duplex","A connection mode where a device can send or receive, but not both at the same time.","Like a walkie-talkie, one side talks at a time.","signal"),
+          card("Full Duplex","A connection mode where a device can send and receive data at the same time.","Modern switch connections usually use full duplex.","signal"),
+          card("Speed","The rate a network link is set to use, such as 100 Mbps, 1 Gbps, or 10 Gbps.","A port may run at 100 Mbps, 1 Gbps, or 10 Gbps.","signal"),
+          card("Bandwidth","The maximum amount of data a link can carry at one time.","A 1 Gbps link has more bandwidth than a 100 Mbps link.","signal"),
+          card("Throughput","The actual amount of data successfully moving across the network.","A 1 Gbps link may have lower real throughput because of congestion or errors.","signal"),
+          card("Auto-Negotiation","A feature where two connected devices automatically agree on speed and duplex.","A PC and switch agree to use 1 Gbps full duplex.","signal"),
+          card("Duplex Mismatch","A problem where two connected devices use different duplex settings, often causing errors and slowness.","One side is full duplex and the other is half duplex, causing slow performance.","fault"),
+          card("Link Light","A port light showing that a physical network connection exists.","If the cable is plugged in and working, the link light turns on.","infra"),
+          card("Activity Light","A blinking port light showing that data is moving through the port.","The light blinks when traffic is being sent or received.","infra"),
+          card("Collision","When devices try to send data at the same time on a half-duplex connection.","Older hub networks had collisions often.","fault"),
+          card("Late Collision","A collision that happens too late in the transmission, often pointing to cabling or duplex problems.","It can point to bad cabling, a duplex mismatch, or a network design issue.","fault"),
+          card("Access Port","A switch port that carries traffic for one VLAN.","A PC plugged into VLAN 10 usually connects to an access port.","infra"),
+          card("Trunk Port","A switch port that carries traffic for multiple VLANs.","A switch-to-switch connection often uses a trunk port.","infra"),
+          card("Uplink Port","A port used to connect to another switch, router, or higher-level network device.","An access switch uplinks to the main network switch.","infra"),
+          card("Port Security","A switch feature that controls which devices are allowed to connect to a port.","A switch can block unknown MAC addresses on a port.","security"),
+          card("Err-Disabled Port","A switch port that automatically shut down because the switch detected a problem.","A port security violation can put a port into err-disabled state.","fault"),
+          card("PoE","Power over Ethernet. A feature that sends electrical power and network data through the same Ethernet cable.","IP phones, cameras, and wireless access points can get power from a switch.","poe"),
+          card("PoE+","Power over Ethernet Plus. A stronger version of PoE that provides more power for devices.","A high-power wireless access point may need PoE+.","poe"),
+          card("MAC Address","Media Access Control address. A unique hardware address used to identify a device on a local network.","A switch learns the MAC address of a PC connected to a port.","infra"),
+          card("Switch Port","A physical connection point on a switch where a cable plugs in.","You plug an Ethernet cable from a computer into a switch port.","infra"),
+          card("Interface","A network connection point on a device that can be configured or monitored.","A router interface or switch interface can be configured with settings.","infra"),
+          card("Port Status","The current condition of a switch port, such as connected, disabled, or err-disabled.","A port may show connected, not connected, disabled, or err-disabled.","infra")
+        ]
+      },
+      {
+        id:"linkredundancy",
+        title:"Link Aggregation, Redundancy, and STP",
+        description:"Concept-focused redundancy, bundled links, failover, switching loops, STP, and high availability.",
+        available:true,
+        hasImages:false,
+        cards:[
+          card("Link Aggregation","Combining multiple physical links into one logical link for more bandwidth, backup, or both.","Two switch cables can act like one stronger connection.","infra"),
+          card("EtherChannel","Cisco’s name for bundling multiple switch links into one logical link.","Four links between two Cisco switches can be bundled into one EtherChannel.","infra"),
+          card("LACP","Link Aggregation Control Protocol. An open standard protocol that automatically forms link aggregation bundles.","Two switches use LACP to agree that certain ports should become one bundle.","infra"),
+          card("PAgP","Port Aggregation Protocol. A Cisco protocol that automatically forms EtherChannel bundles.","Cisco switches can use PAgP to build a bundle between them.","infra"),
+          card("Port Channel","The logical interface created when multiple physical links are bundled together.","Four physical switch ports can become one port-channel interface.","infra"),
+          card("Redundancy","Having backup links, paths, or devices so the network can keep working after a failure.","If one cable fails, another path keeps traffic moving.","infra"),
+          card("Failover","When traffic automatically moves to a backup path or device after a failure.","If one uplink dies, the switch uses another working uplink.","infra"),
+          card("Load Balancing","Sharing traffic across multiple links or paths instead of using only one.","A port channel can share traffic across bundled cables.","signal"),
+          card("STP","Spanning Tree Protocol. A switching protocol that prevents loops by blocking extra paths until needed.","STP may block one link between switches to stop a loop.","infra"),
+          card("Loop","A Layer 2 problem where frames keep circulating endlessly between switches.","Connecting switches with too many paths can create a loop.","fault"),
+          card("Broadcast Storm","A flood of broadcast traffic, often caused by a switching loop, that can slow or crash the network.","A broadcast storm can make the network extremely slow or unusable.","fault"),
+          card("Blocked Port","A switch port that STP stops from forwarding traffic to prevent a loop.","STP may block a backup link until the main link fails.","fault"),
+          card("Root Bridge","The main switch STP uses as the center point for calculating loop-free paths.","Other switches calculate their best path back to the root bridge.","infra"),
+          card("BPDU","Bridge Protocol Data Unit. STP messages switches use to share information and prevent loops.","Switches send BPDUs to understand the network layout.","infra"),
+          card("PortFast","A feature that lets an access port become active faster by skipping some STP waiting steps.","A PC port can use PortFast so the computer connects quickly.","infra"),
+          card("Redundant Link","An extra physical connection used as a backup path.","A second cable between switches can provide backup if the first cable fails.","infra"),
+          card("Single Point of Failure","One device, link, or system that can break the whole connection if it fails.","If one uplink is the only path to the network, it is a single point of failure.","fault"),
+          card("High Availability","A design goal where the network keeps working even when something fails.","Using backup switches and redundant links improves high availability.","infra"),
+          card("Active Link","The link currently forwarding traffic.","In a redundant setup, the active link carries the normal traffic.","signal"),
+          card("Standby Link","A backup link waiting to be used if the active link fails.","STP may keep one link on standby to prevent a loop.","signal")
+        ]
+      },
+      {
+        id:"servicessecurity",
+        title:"Recovery, Wireless, AAA, NAC, and DHCP Services",
+        description:"Concept-focused recovery planning, authentication, wireless IDs, DHCP services, directories, and access control.",
+        available:true,
+        hasImages:false,
+        cards:[
+          card("Cold Site","A backup location with space and basic infrastructure, but little or no ready equipment.","After a disaster, the company must bring in servers and network gear before using it.","recovery"),
+          card("Warm Site","A backup location with some equipment and systems prepared, but not fully live.","A company can restore operations faster than a cold site, but it still needs setup time.","recovery"),
+          card("Hot Site","A fully prepared backup location that can take over quickly after an outage.","If the main data center fails, the hot site can start running business systems with little downtime.","recovery"),
+          card("ESSID","Extended Service Set Identifier. A Wi-Fi network name shared across multiple access points.","Company-Guest or Home-WiFi can be an ESSID.","wireless"),
+          card("BSSID","Basic Service Set Identifier. The MAC address of a specific wireless access point radio.","Two access points may broadcast the same ESSID, but each has its own BSSID.","wireless"),
+          card("SSID","Service Set Identifier. The name of a wireless network that users see when connecting.","Your laptop connects to an SSID like Office-WiFi.","wireless"),
+          card("RTO","Recovery Time Objective. The maximum acceptable time it should take to restore a service after an outage.","If the RTO is 4 hours, the system should be back within 4 hours.","recovery"),
+          card("RPO","Recovery Point Objective. The maximum acceptable amount of data loss measured in time.","If the RPO is 1 hour, backups should prevent losing more than 1 hour of data.","recovery"),
+          card("LDAP","Lightweight Directory Access Protocol. A protocol used to access directory information like users and groups.","A system can use LDAP to look up users in Active Directory.","security"),
+          card("LDAPS","Lightweight Directory Access Protocol Secure. LDAP protected with encryption.","A login system uses LDAPS so username and password information is not sent in clear text.","security"),
+          card("TACACS+","Terminal Access Controller Access-Control System Plus. A protocol used to centrally control admin access to network devices.","A network admin logs into a Cisco switch using TACACS+.","security"),
+          card("RADIUS","Remote Authentication Dial-In User Service. A central authentication protocol often used for Wi-Fi, VPN, and network access.","Employees connect to enterprise Wi-Fi using RADIUS authentication.","security"),
+          card("AAA","Authentication, Authorization, and Accounting. It verifies who you are, what you can do, and records what you did.","AAA checks who you are, what you can do, and records what you did.","security"),
+          card("Authentication","Proving who a user or device is.","Entering a username and password to log into a switch.","security"),
+          card("Authorization","Deciding what an authenticated user or device is allowed to access or do.","One admin can view settings, while another can change configurations.","security"),
+          card("Accounting","Recording user activity for tracking, auditing, and troubleshooting.","A log shows when an admin logged into a router and what commands were used.","security"),
+          card("Key Management","The process of creating, storing, rotating, and protecting encryption keys.","A company rotates Wi-Fi keys or certificate keys to keep access secure.","security"),
+          card("Pre-Shared Key","A shared Wi-Fi password used by devices to join a wireless network.","A home router uses a Wi-Fi password as a pre-shared key.","security"),
+          card("WPA2","Wi-Fi Protected Access 2. A common Wi-Fi security standard used to protect wireless traffic.","Many home and office networks use WPA2-Personal or WPA2-Enterprise.","wireless"),
+          card("WPA3","Wi-Fi Protected Access 3. A newer Wi-Fi security standard with stronger protection than WPA2.","New routers may support WPA3 for better wireless security.","wireless"),
+          card("NAC","Network Access Control. A system that decides whether devices are allowed to connect to the network.","NAC can block an unknown laptop from joining the company network.","security"),
+          card("802.1X","An IEEE port-based authentication standard used to control wired and wireless network access.","A switch port can require a user or device to authenticate before getting network access.","security"),
+          card("Supplicant","The client device or software trying to authenticate to the network.","A laptop connecting to secure Wi-Fi acts as the supplicant.","security"),
+          card("Authenticator","The network device that controls access while authentication happens.","A switch or access point acts as the authenticator.","security"),
+          card("Authentication Server","The server that checks credentials and approves or denies access.","A RADIUS server checks if the login is valid.","security"),
+          card("Captive Portal","A web login or acceptance page shown before network access is allowed.","Hotel Wi-Fi asks you to accept terms before connecting.","security"),
+          card("IP Helper","A router feature that forwards DHCP requests from one network to a DHCP server on another network.","A PC in VLAN 10 can reach a DHCP server in another VLAN because of IP helper.","service"),
+          card("DHCP Relay","Dynamic Host Configuration Protocol relay. A device feature that forwards DHCP messages between clients and a DHCP server.","A router relays DHCP requests from a local subnet to a remote DHCP server.","service"),
+          card("DHCP Server","Dynamic Host Configuration Protocol server. A server that automatically gives IP addresses and network settings to devices.","A new laptop receives an IP address, subnet mask, gateway, and DNS server.","service"),
+          card("DHCP Scope","Dynamic Host Configuration Protocol scope. A range of IP addresses a DHCP server can assign.","VLAN 20 may use a DHCP scope of 192.168.20.50 to 192.168.20.200.","service"),
+          card("Default Gateway","The router address a device uses to reach other networks or the internet.","A PC sends traffic to the default gateway when visiting a website.","service"),
+          card("DNS Server","Domain Name System server. A server that translates names into IP addresses.","DNS turns google.com into an IP address.","service"),
+          card("Directory Service","A system that stores and organizes users, groups, computers, and permissions.","Active Directory is a directory service used in many companies.","security"),
+          card("Active Directory","Microsoft directory service used to manage users, computers, groups, logins, and policies.","Employees log into company computers using Active Directory accounts.","security"),
+          card("Group Policy","A feature used to centrally manage settings for users and computers in Active Directory.","Group Policy can enforce password rules or map network drives.","security"),
+          card("Kerberos","A secure authentication protocol often used with Active Directory to verify users without repeatedly sending passwords.","A domain user logs in and Kerberos helps verify access without repeatedly sending the password.","security")
+        ]
+      },
+      {id:"ip",title:"IP Addressing",description:"IP addresses, subnet masks, gateways, DNS, DHCP, IPv4, IPv6, and MAC addresses.",available:false,hasImages:false,cards:[]},
+      {id:"switching",title:"Switching",description:"Switches, VLANs, trunk ports, access ports, STP, PoE, and MAC tables.",available:false,hasImages:false,cards:[]},
+      {id:"routing",title:"Routing",description:"Routers, static routes, default routes, OSPF, BGP, NAT, LAN, and WAN.",available:false,hasImages:false,cards:[]}
+    ];
+
+    let currentTopic=topics[0];
+    let activeCards=[...currentTopic.cards];
+    let currentIndex=0;
+    let quizIndex=0;
+    let quizScore=0;
+    let quizAnswered=false;
+    let firstSelectedCard=null;
+    let lockMatchBoard=false;
+    let matchCorrect=0;
+    let matchTotal=6;
+
+    function saveAppState(screenId){
+      localStorage.setItem("networkStudyScreen",screenId);
+      localStorage.setItem("networkStudyTopic",currentTopic.id);
+    }
+
+    function prepareModeScreen(){
+      return;
+    }
+
+    function showScreen(id,shouldSave=true){
+      document.querySelectorAll(".screen").forEach(screen=>screen.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+      document.getElementById("headerSubtitle").textContent=currentTopic?currentTopic.title:"Build confidence one concept at a time";
+      if(shouldSave)saveAppState(id);
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function renderTopics(){
+      const topicGrid=document.getElementById("topicGrid");
+      topicGrid.innerHTML="";
+      topics.forEach(topic=>{
+        const topicCard=document.createElement("div");
+        topicCard.className=topic.available?"topic-card":"topic-card locked";
+        const modeLabel = topic.available ? (topic.hasImages ? "Picture + Concept" : "Concept Only") : "Coming soon";
+
+        topicCard.innerHTML=`
+          <span class="badge">${topic.available ? topic.cards.length + " cards · " + modeLabel : "Coming soon"}</span>
+          <h3>${escapeHTML(topic.title)}</h3>
+          <p>${escapeHTML(topic.description)}</p>
+        `;
+
+        if(topic.available)topicCard.onclick=()=>selectTopic(topic.id);
+        topicGrid.appendChild(topicCard);
+      });
+    }
+
+    function selectTopic(topicId){
+      currentTopic=topics.find(topic=>topic.id===topicId);
+      activeCards=[...currentTopic.cards];
+      localStorage.setItem("networkStudyCardIndex",0);
+      prepareModeScreen();
+      showScreen("modeScreen");
+    }
+
+    function startFlashcards(shouldSave=true){
+      currentIndex=Number(localStorage.getItem("networkStudyCardIndex"))||0;
+      activeCards=[...currentTopic.cards];
+      if(currentIndex>=activeCards.length)currentIndex=0;
+      document.getElementById("flashTopicName").textContent=currentTopic.title;
+      showScreen("flashcardScreen",shouldSave);
+      showFlashcard();
+    }
+
+    function showFlashcard(){
+      const cardData=activeCards[currentIndex];
+      localStorage.setItem("networkStudyCardIndex",currentIndex);
+      document.getElementById("flashCounter").textContent=`Card ${currentIndex+1} of ${activeCards.length}`;
+
+      const front = document.getElementById("flashFront");
+      const imageBox = document.getElementById("flashImageBox");
+
+      if(currentTopic.hasImages){
+        front.classList.remove("text-only-front");
+        imageBox.style.display = "block";
+        imageBox.innerHTML=imageViewer(cardData);
+      }else{
+        front.classList.add("text-only-front");
+        imageBox.innerHTML="";
+        imageBox.style.display = "none";
+      }
+
+      document.getElementById("flashTerm").textContent=cardData.term;
+      document.getElementById("backTerm").textContent=cardData.term;
+      document.getElementById("backDefinition").textContent=cardData.definition;
+      document.getElementById("backExample").innerHTML=`<strong>Example:</strong> ${escapeHTML(cardData.example)}`;
+      document.getElementById("flashTopicName").textContent=currentTopic.title;
+      document.getElementById("flashcard").classList.remove("flipped");
+    }
+
+    function flipCard(){document.getElementById("flashcard").classList.toggle("flipped")}
+    function nextCard(){currentIndex=(currentIndex+1)%activeCards.length;showFlashcard()}
+    function previousCard(){currentIndex=(currentIndex-1+activeCards.length)%activeCards.length;showFlashcard()}
+    function shuffleCards(){shuffleArray(activeCards);currentIndex=0;showFlashcard()}
+
+    function startQuiz(shouldSave=true){
+      quizIndex=0;quizScore=0;quizAnswered=false;
+      activeCards=[...currentTopic.cards];
+      shuffleArray(activeCards);
+      document.getElementById("quizTopicName").textContent=currentTopic.title;
+      showScreen("quizScreen",shouldSave);
+      showQuizQuestion();
+    }
+
+    function showQuizQuestion(){
+      quizAnswered=false;
+      const cardData=activeCards[quizIndex];
+      document.getElementById("quizQuestion").textContent=`What does "${cardData.term}" mean?`;
+      const answers=[cardData.definition];
+
+      while(answers.length<4){
+        const randomCard=currentTopic.cards[Math.floor(Math.random()*currentTopic.cards.length)];
+        if(!answers.includes(randomCard.definition))answers.push(randomCard.definition);
+      }
+
+      shuffleArray(answers);
+      const answersBox=document.getElementById("quizAnswers");
+      answersBox.innerHTML="";
+
+      answers.forEach(answer=>{
+        const btn=document.createElement("button");
+        btn.className="answer-btn";
+        btn.textContent=answer;
+        btn.onclick=()=>checkAnswer(btn,answer,cardData.definition);
+        answersBox.appendChild(btn);
+      });
+
+      document.getElementById("quizScore").textContent=`Question ${quizIndex+1} of ${activeCards.length} | Score: ${quizScore}`;
+    }
+
+    function checkAnswer(button,selected,correct){
+      if(quizAnswered)return;
+      quizAnswered=true;
+
+      document.querySelectorAll(".answer-btn").forEach(btn=>{
+        if(btn.textContent===correct)btn.classList.add("correct");
+      });
+
+      if(selected===correct){quizScore++;button.classList.add("correct")}
+      else button.classList.add("wrong");
+
+      document.getElementById("quizScore").textContent=`Question ${quizIndex+1} of ${activeCards.length} | Score: ${quizScore}`;
+    }
+
+    function nextQuizQuestion(){
+      quizIndex++;
+      if(quizIndex>=activeCards.length){
+        alert(`Practice complete! Score: ${quizScore} out of ${activeCards.length}`);
+        startQuiz();
+        return;
+      }
+      showQuizQuestion();
+    }
+
+    function startMatch(shouldSave=true){
+      document.getElementById("matchTopicName").textContent=currentTopic.title;
+      showScreen("matchScreen",shouldSave);
+      firstSelectedCard=null;lockMatchBoard=false;matchCorrect=0;
+
+      const roundCards=[...currentTopic.cards];
+      shuffleArray(roundCards);
+      const selectedCards=roundCards.slice(0,6);
+      matchTotal=selectedCards.length;
+      const matchItems=[];
+
+      selectedCards.forEach(cardData=>{
+        matchItems.push({id:cardData.term,text:cardData.term,type:"term"});
+        matchItems.push({id:cardData.term,text:cardData.definition,type:"definition"});
+      });
+
+      shuffleArray(matchItems);
+      const grid=document.getElementById("quizletMatchGrid");
+      grid.innerHTML="";
+
+      matchItems.forEach(item=>{
+        const div=document.createElement("div");
+        div.className="quizlet-card";
+        div.textContent=item.text;
+        div.dataset.id=item.id;
+        div.dataset.type=item.type;
+        div.onclick=()=>selectMatchCard(div);
+        grid.appendChild(div);
+      });
+
+      document.getElementById("selectedDisplay").textContent="Selected: none";
+      document.getElementById("matchScore").textContent=`Matched: 0 of ${matchTotal}`;
+    }
+
+    function selectMatchCard(cardElement){
+      if(lockMatchBoard)return;
+      if(cardElement.classList.contains("blank-space"))return;
+
+      if(!firstSelectedCard){
+        firstSelectedCard=cardElement;
+        cardElement.classList.add("selected");
+        document.getElementById("selectedDisplay").textContent=`Selected: ${cardElement.textContent}`;
+        return;
+      }
+
+      if(firstSelectedCard===cardElement){
+        firstSelectedCard.classList.remove("selected");
+        firstSelectedCard=null;
+        document.getElementById("selectedDisplay").textContent="Selected: none";
+        return;
+      }
+
+      const samePair=firstSelectedCard.dataset.id===cardElement.dataset.id;
+      const differentType=firstSelectedCard.dataset.type!==cardElement.dataset.type;
+
+      if(samePair&&differentType){
+        lockMatchBoard=true;
+        firstSelectedCard.classList.remove("selected");
+        firstSelectedCard.classList.add("correct-pop");
+        cardElement.classList.add("correct-pop");
+        matchCorrect++;
+        document.getElementById("matchScore").textContent=`Matched: ${matchCorrect} of ${matchTotal}`;
+        document.getElementById("selectedDisplay").textContent="Correct match.";
+
+        const firstCard=firstSelectedCard;
+        const secondCard=cardElement;
+
+        setTimeout(()=>{
+          firstCard.classList.add("blank-space");
+          secondCard.classList.add("blank-space");
+          firstSelectedCard=null;
+          lockMatchBoard=false;
+
+          document.getElementById("selectedDisplay").textContent=matchCorrect===matchTotal
+            ? "Round complete. Great work."
+            : "Selected: none";
+        },350);
+      }else{
+        lockMatchBoard=true;
+        firstSelectedCard.classList.add("wrong-shake");
+        cardElement.classList.add("wrong-shake");
+        document.getElementById("selectedDisplay").textContent="Not a match. Try again.";
+
+        setTimeout(()=>{
+          firstSelectedCard.classList.remove("selected","wrong-shake");
+          cardElement.classList.remove("wrong-shake");
+          firstSelectedCard=null;
+          lockMatchBoard=false;
+          document.getElementById("selectedDisplay").textContent="Selected: none";
+        },450);
+      }
+    }
+
+    function startReview(shouldSave=true){
+      document.getElementById("reviewTopicName").textContent=currentTopic.title;
+      showScreen("reviewScreen",shouldSave);
+      const grid=document.getElementById("reviewGrid");
+      grid.innerHTML="";
+
+      currentTopic.cards.forEach(cardData=>{
+        const div=document.createElement("div");
+        div.className=currentTopic.hasImages ? "review-card" : "review-card no-image";
+
+        div.innerHTML= currentTopic.hasImages
+          ? `
+            ${imageViewer(cardData)}
+            <h3>${escapeHTML(cardData.term)}</h3>
+            <p>${escapeHTML(cardData.definition)}</p>
+            <p><span class="label">Example:</span> ${escapeHTML(cardData.example)}</p>
+          `
+          : `
+            <h3>${escapeHTML(cardData.term)}</h3>
+            <p>${escapeHTML(cardData.definition)}</p>
+            <p><span class="label">Example:</span> ${escapeHTML(cardData.example)}</p>
+          `;
+
+        grid.appendChild(div);
+      });
+    }
+
+    function restoreAppState(){
+      const savedTopicId=localStorage.getItem("networkStudyTopic");
+      const savedScreenId=localStorage.getItem("networkStudyScreen");
+      const savedTopic=topics.find(topic=>topic.id===savedTopicId&&topic.available);
+
+      if(savedTopic){currentTopic=savedTopic;activeCards=[...currentTopic.cards]}
+      prepareModeScreen();
+
+      if(!savedScreenId||!document.getElementById(savedScreenId)){showScreen("startScreen",false);return}
+      if(savedScreenId==="modeScreen"){showScreen("modeScreen",false);return}
+      if(savedScreenId==="topicScreen"){showScreen("topicScreen",false);return}
+      if(savedScreenId==="flashcardScreen"){startFlashcards(false);return}
+      if(savedScreenId==="quizScreen"){startQuiz(false);return}
+      if(savedScreenId==="matchScreen"){startMatch(false);return}
+      if(savedScreenId==="reviewScreen"){startReview(false);return}
+
+      showScreen(savedScreenId,false);
+    }
+
+    function shuffleArray(array){
+      for(let i=array.length-1;i>0;i--){
+        const randomIndex=Math.floor(Math.random()*(i+1));
+        [array[i],array[randomIndex]]=[array[randomIndex],array[i]];
+      }
+      return array;
+    }
+
+    loadTheme();
+    renderTopics();
+    restoreAppState();
+  </script>
+</body>
+</html>
